@@ -2,80 +2,52 @@
 #include <vector>
 #include <algorithm>
 #include <queue>
+#define el '\n'
 using namespace std;
 typedef long long ll;
-typedef vector<int> vi;
-typedef pair<int, int> pii;
-const int INF = 987654321;
-const int MAX = 50000000;
+const int MOD = 10000;
+const int SEED = 1983;
 
 struct RNG {
-    unsigned int seed;
-    RNG() : seed(1983) {}
+    unsigned seed;
 
-    unsigned int next() {
-        unsigned int ret = seed % 10000 + 1;
+    RNG(unsigned _seed=SEED) : seed(_seed){}
+
+    int next() {
+        int ret = seed % MOD + 1;
         seed = seed * 214013u + 2531011u;
         return ret;
     }
 };
 
-int N, K;
+int N, K; // 박스 수, 어린이의 수
 
-int solve();
 int main()
 {
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
-
+    cin.tie(nullptr); ios_base::sync_with_stdio(false);
     int t; cin >> t;
-    while (t-- > 0)
+    while (t--)
     {
         cin >> K >> N;
-        cout << solve() << '\n';
-    }
-}
+        RNG rng;
+        queue<int> q;
 
-int solve()
-{
-    RNG rng;
+        int ans = 0;
+        int sum = 0;
+        for (int i = 0; i < N; ++i) {
+            int num = rng.next();
+            sum += num;
+            q.push(num);
 
-    queue<unsigned int> q;
-    int left = 1, right = 1;
-    int sum = rng.next();
-    int ans = 0;
-
-    q.push(sum);
-    while (right <= N)
-    {
-        if (sum < K) // 더 작아서, 추가해야됨
-        {
-            q.push(rng.next());
-            ++right;
-            sum += q.back();
-        }
-        else if (sum == K) // 같음!
-        {
-            ans++;
-            if (left == right) {
-                q.push(rng.next());
-                sum += q.back();
-                right++;
+            while (sum > K) {
+                sum -= q.front();
+                q.pop();
             }
-            sum -= q.front(); q.pop();
-            left++;
-        }
-        else //넘침, 줄여야됨
-        {
-            if (left == right) {
-                q.push(rng.next());
-                sum += q.back();
-                right++;
+            if (sum == K) {
+                ans++;
             }
-            sum -= q.front(); q.pop();
-            left++;
         }
-    }
 
-    return ans;
+        cout << ans << el;
+    }
 }
