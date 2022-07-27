@@ -5,107 +5,77 @@
 #include <queue>
 #include <cstring>
 #include <cmath>
-#include <iomanip>
 #include <list>
 #include <stack>
 #include <assert.h>
 #include <string>
+#include <map>
+#include <set>
+#include <cstdlib>
+#include <climits>
+#include <cstdio>
+#define el '\n'
 using namespace std;
-typedef long long ll;
 typedef vector<int> vi;
-typedef pair<int, int> pii;
-const int INF = 987654321;
-
-struct Pred {
-    const vi& group;
-    int t;
-    Pred(const vi& _group, int _t) : group(_group), t(_t) {}
-
-    bool operator() (int a, int b) {
-        if (group[a] != group[b])
-            return group[a] < group[b];
-        return group[a + t] < group[b + t];
-    }
-
-
-};
-
 
 int  K;
+string s;
 
-
-int fun(const string& s, int i, int j);
-vi getSuffixArray(const string& s);
-int main() 
+int commonPrefix(int i, int j);
+vi getSuffixArray();
+int main()
 {
-    int t; cin >> t;
-    while (t-- > 0)
-    {
-        string s;
-        cin >> K >> s;
-        vi suffixArray = getSuffixArray(s); // o(n * logn *logn)
+    cin.tie(nullptr); ios_base::sync_with_stdio(false); cout.tie(nullptr);
+    int t;  cin >> t;
+    while (t--) {
+        cin >> K >>  s;
+        vi sa = getSuffixArray();
+        int n = s.length();
 
         int ans = 0;
-        // i n-k ~ n-1 is last
-        // o(4000 최대문자열 길이) * o(fun) (o(fun) < s.size())
-        for (int i = 0; i + K <= s.size(); ++i) { 
-            ans = max(ans, fun(s, suffixArray[i], suffixArray[i+K-1]));
+        for (int i = 0; i + K <= n; ++i) {
+            ans = max(ans, commonPrefix(sa[i], sa[i + K-1]));
         }
-
-        cout << ans << '\n';
+        cout << ans << el;
     }
-
 }
 
-int fun(const string& s, int i, int j)
+int commonPrefix(int i, int j)
 {
+    int n = s.length();
     int ret = 0;
-    while (i<s.size() && j<s.size() ) {
-        if (s[i] == s[j]) {
-            ++i;
-            ++j;
-            ret++;
-        }
-        else
-            break;
-    }
+    while (i+ret < n && j+ret < n && s[i+ret] == s[j+ret])
+        ret++;
     return ret;
 }
 
-vi getSuffixArray(const string& s)
-{
-    int n = s.size();
 
-    int t = 1;
-    vi group(n + 1);
-    // 첫 문자열 숫자를 그대로 그룹에 넣기
-    for (int i = 0; i < n; ++i) group[i] = s[i];
+vi getSuffixArray()
+{
+    int n = s.length();
+    vi group(n + 1), nextGroup(n + 1), ret(n);
+    for (int i = 0; i < n; ++i) group[i] = s[i], ret[i] = i;
     group[n] = -1;
 
-    vi ret(n);
-    for (int i = 0; i < n; ++i)
-        ret[i] = i;
+    int t = 1;
+    while (true)
+    {
+        auto comp = [&](int i, int j) {
+            if (group[i] == group[j])
+                return group[i + t] < group[j + t];
+            return group[i] < group[j];
+        };
+        sort(ret.begin(), ret.end(), comp);
 
-    while (t < n) {
-
-        Pred pred(group, t);
-        sort(ret.begin(), ret.end(), pred);
+        nextGroup[n] = -1;
+        nextGroup[ret[0]] = 0;
+        for (int i = 1; i < n; ++i)
+            nextGroup[ret[i]] = nextGroup[ret[i - 1]] + comp(ret[i - 1], ret[i]);
+        swap(group, nextGroup);
 
         t *= 2;
-        if (t >= n) break;
-
-        vi newGroup(n + 1);
-        newGroup[n] = -1;
-        newGroup[ret[0]] = 0;
-        for (int i = 1; i < n; ++i) {
-            // 최소 비내림차순으로 정렬, 밑 조건이 false라면 같다는 뜻
-            if (pred(ret[i - 1], ret[i]))
-                newGroup[ret[i]] = newGroup[ret[i - 1]] + 1;
-            else
-                newGroup[ret[i]] = newGroup[ret[i - 1]];
-        }
-        group = newGroup;
+        if (group[ret[n - 1]] == n - 1)
+            break;
     }
-
     return ret;
 }
