@@ -5,136 +5,111 @@
 #include <queue>
 #include <cstring>
 #include <cmath>
-#include <iomanip>
 #include <list>
 #include <stack>
 #include <assert.h>
 #include <string>
 #include <map>
 #include <set>
-#include <iterator>
 #include <cstdlib>
-#include <ctime>
+#include <climits>
+#include <cstdio>
+#define el '\n'
 using namespace std;
 typedef long long ll;
 typedef vector<int> vi;
 typedef vector<vi> vvi;
 typedef pair<int, int> pii;
 const int INF = 987654321;
+const int MOD = 1000000007;
 
 typedef int KeyType;
 struct Node {
     KeyType key;
-    
-    int priority, size; // size는 본인이 루트인 서브트리 크기
+    int priority, size;
+    Node* left, * right;
 
-    Node *left, *right;
-
-    Node (const KeyType& _key) : key(_key), priority(rand()), 
+    Node(const KeyType& _key) : key(_key), priority(rand()),
         size(1), left(NULL), right(NULL) {}
+    ~Node() {
+        delete left;
+        delete right;
+    }
 
     void setLeft(Node* newLeft) {
-        left = newLeft; calSize();
+        left = newLeft;
+        calcSize();
     }
-
     void setRight(Node* newRight) {
-        right = newRight; calSize();
+        right = newRight;
+        calcSize();
     }
-
-    void calSize() {
+    void calcSize() {
         size = 1;
         if (left) size += left->size;
         if (right) size += right->size;
     }
-
 };
-
-
 typedef pair<Node*, Node*> NodePair;
-int N;
 
-Node* erase(Node* root, KeyType key);
 Node* insert(Node* root, Node* node);
-Node* find_nth(Node* root, int nth);
+Node* erase(Node* root, KeyType key);
+int nth(Node* root, int k);
 int main()
 {
-    cin.tie(nullptr);
-    ios_base::sync_with_stdio(false);
-    srand((unsigned int)time(NULL));
-
-
+    cin.tie(nullptr); ios_base::sync_with_stdio(false);
     int t; cin >> t;
-    while (t-- > 0)
+    while (t--)
     {
-        cin >> N;
-        vi moved(N + 1);
-        for (int i = 1; i <= N; ++i)
-            cin >> moved[i];
+        int n; cin >> n;
+        vi ans(n), input(n);
+        for (int i = 0; i < n; ++i) cin >> input[i];
 
-
-        // MAKE TREAP
         Node* treap = NULL;
-        for (int i = 1; i <= N; ++i) 
-            treap = insert(treap, new Node(i));
-        
+        for (int i = 1; i <= n; ++i) treap = insert(treap, new Node(i));
 
-        vi ans(N+1);
-        for (int i = N; i >= 1; --i) {
-            int nth = treap->size - moved[i];
-
-            ans[i] = find_nth(treap, nth)->key;
+        for (int i = n - 1; i >= 0; --i) {
+            ans[i] = nth(treap, treap->size - input[i]);
             treap = erase(treap, ans[i]);
         }
 
-        for (int i = 1; i <= N; ++i)
-            cout << ans[i] << " ";
-        cout << '\n';
-
-        
+        for (int i : ans)
+            cout << i << " ";
+        cout << el;
+        delete treap;
     }
-
- 
 }
 
-Node* find_nth(Node* root, int nth)
-{
-    int lsize = (root->left) ? root->left->size : 0;
-
-    if (lsize >= nth)
-        return find_nth(root->left, nth);
-    else if (nth == lsize + 1)
-        return root;
-    // lsize +1 < nth
-    else
-        return find_nth(root->right, nth - lsize - 1);
-
+int nth(Node* root, int k) {
+    int leftSize = 0;
+    if (root->left != NULL) leftSize = root->left->size;
+    if (leftSize >= k) return nth(root->left, k);
+    if (leftSize == k - 1) return root->key;
+    else return nth(root->right, k - leftSize - 1);
 }
 
-// key가 새로운 루트가 될 것.
-NodePair split(Node* root, KeyType key)
-{
-    // no need perhaps?
+
+// root서브트리를 key를 기준으로 좌우로 나눔.
+NodePair split(Node* root, KeyType key) {
     if (root == NULL) return NodePair(NULL, NULL);
 
     if (root->key < key) {
-        NodePair rs = split(root->right, key);
-        root->setRight(rs.first);
-        return NodePair(root, rs.second);
+        NodePair rightSide = split(root->right, key);
+        root->setRight(rightSide.first);
+        return NodePair(root, rightSide.second);
     }
     else {
-        NodePair ls = split(root->left, key);
-        root->setLeft(ls.second);
-        return NodePair(ls.first, root);
+        NodePair leftSide = split(root->left, key);
+        root->setLeft(leftSide.second);
+        return NodePair(leftSide.first, root);
     }
-
-    
 }
 
-// new Root return
-Node* insert(Node* root, Node* node)
-{
+Node* insert(Node* root, Node* node) {
     if (root == NULL) return node;
 
+    // 우선순위 앞설경우, root를 둘로나누고 
+    // node 좌우에 붙이고 node가 새로운 루트
     if (root->priority < node->priority) {
         NodePair splitted = split(root, node->key);
         node->setLeft(splitted.first);
@@ -145,52 +120,41 @@ Node* insert(Node* root, Node* node)
         root->setRight(insert(root->right, node));
     else
         root->setLeft(insert(root->left, node));
+
     return root;
 }
 
-// a의모든게 b보다 작다는 게 보장되어있음
-Node* merge(Node* a, Node* b)
-{
-    //both NULL case also handled correctly
-    if (a == NULL) return b;
-    if (b == NULL) return a;
+// left와 right를 하나로 합쳐서 루트 리턴
+Node* merge(Node* left, Node* right) {
+    if (left == NULL) return right;
+    if (right == NULL) return left;
 
-    // b is root
-    if (a->priority < b->priority)
-    {
-        b->setLeft(merge(a, b->left));
-        return b;
+    if (left->priority < right->priority) {
+        right->setLeft(merge(left, right->left));
+        return right;
     }
-    // a is root
-    else
-    {
-        a->setRight(merge(a->right, b));
-        return a;
+    else {
+        left->setRight(merge(left->right, right));
+        return left;
     }
 }
-
-Node* erase(Node* root, KeyType key)
-{
-    // WHEN SUCH KEY DOESNT EXIST
+// 삭제하고 새로운 루트 리턴
+Node* erase(Node* root, KeyType key) {
+    // 삭제하려는 원소가 없음
     if (root == NULL)
-        return NULL;
-
+        return root;
 
     if (root->key == key) {
-        Node* nroot = merge(root->left, root->right);
+        Node* ret = merge(root->left, root->right);
+        root->setLeft(NULL);
+        root->setRight(NULL);
         delete root;
-        return nroot;
+        return ret;
     }
 
-
-    //left
-    if (root->key > key) {
+    if (key < root->key)
         root->setLeft(erase(root->left, key));
-    }
-    //right
-    else {
+    else
         root->setRight(erase(root->right, key));
-    }
-
     return root;
 }
