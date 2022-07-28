@@ -5,79 +5,62 @@
 #include <queue>
 #include <cstring>
 #include <cmath>
-#include <iomanip>
 #include <list>
 #include <stack>
 #include <assert.h>
 #include <string>
 #include <map>
 #include <set>
-#include <iterator>
 #include <cstdlib>
-#include <ctime>
+#include <climits>
+#include <cstdio>
+#define el '\n'
 using namespace std;
 typedef long long ll;
-typedef vector<ll> vi;
-typedef vector<vi> vvi;
-typedef pair<ll, ll> pii;
-const ll INF = 987654321;
-const ll MOD = 20090711;
+typedef vector<int> vi;
 
+struct FenwickTree{
+    vector<int> tree;
 
-int N, Q;
-vi tree[100000];
-int depth[100000];
-int in[100000];
+    FenwickTree(int n) : tree(n+1) {}
 
-struct Fenwick
-{
-    vi tree;
-    Fenwick(int size) : tree(size+1) {}
-
-    void add(int idx, int val) {
-        idx++;
-
-        while (idx < tree.size()) {
-            tree[idx] += val;
-            idx += idx & -idx;
-        }
-    }
-
-    int sum(int idx) 
-    {
+    // 1부터이다! 0부터아님
+    int sum(int idx) {
         idx++;
         int ret = 0;
-        while (idx > 0) { 
+        while (idx > 0) {
             ret += tree[idx];
-            idx = idx & (idx-1); // lsb 1 지우는 연산
+            idx &= (idx - 1);
+            // idx -= (idx&-idx); 
+            // 끝의 1비트만큼 뺌
         }
         return ret;
     }
+    
+    void add(int idx, int val) {
+        idx++;
+        while (idx < tree.size()) {
+            tree[idx] += val;
+            idx += idx & -idx; // 끝의 1비트만큼 더함
+        }
+    }
 };
-
-
-
 
 int main()
 {
-    cin.tie(nullptr); ios_base::sync_with_stdio(false);
+    cin.tie(nullptr); ios_base::sync_with_stdio(false); cout.tie(nullptr);
     int t; cin >> t;
-
-    while (t-- > 0)
+    while (t--)
     {
-        cin >> N;
-        vi a(N);
-        for (int i = 0; i < N; ++i)
-            cin >> a[i];
-
-        Fenwick fenwick = Fenwick(1000000);
-
+        int n; cin >> n;
+        vi a(n);
+        for (int i = 0; i < n; ++i) cin >> a[i];
+        FenwickTree fenwick(1000000);
         ll ans = 0;
-        for (int i = 0; i < N; ++i) {
+        for (int i = 0; i < n; ++i) {
             ans += (ll)fenwick.sum(999999) - fenwick.sum(a[i]);
             fenwick.add(a[i], 1);
         }
-
-        cout << ans << '\n';
+        cout << ans << el;
     }
 }
